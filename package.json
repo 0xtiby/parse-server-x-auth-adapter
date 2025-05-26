@@ -1,0 +1,49 @@
+{
+  "name": "parse-server-x-auth-adapter",
+  "version": "2.0.3",
+  "description": "Parse server auth adapter to sign with x.com ",
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup ./src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xtiby/parse-server-x-auth-adapter.git"
+  },
+  "keywords": [
+    "parse",
+    "server",
+    "auth",
+    "adapter",
+    "x",
+    "twitter"
+  ],
+  "author": "0xtiby <https://github.com/0xtiby>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/0xtiby/parse-server-x-auth-adapter/issues"
+  },
+  "homepage": "https://github.com/0xtiby/parse-server-x-auth-adapter#readme",
+  "devDependencies": {
+    "@types/parse": "^3.0.9",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "parse-server": "^8.0.0"
+  }
+}
