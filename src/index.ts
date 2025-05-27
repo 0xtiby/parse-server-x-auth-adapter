@@ -16,6 +16,16 @@ export interface XUserData {
   verified_email?: string;
   username: string;
   name: string;
+  [key: string]: string | undefined;
+}
+
+export interface XTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope?: string;
+  id_token?: string;
 }
 
 export class XAuthAdapter {
@@ -97,9 +107,11 @@ export function initializeXAdapter(): XParseServerAuthOptions {
   return { module: new XAuthAdapter(), options: {} };
 }
 
-export async function fetchUserData(accessToken: string): Promise<XUserData> {
-  const X_API_ENDPOINT =
-    "https://api.x.com/2/users/me?user.fields=confirmed_email,username,name";
+export async function fetchUserData(
+  accessToken: string,
+  fields: string[] = ["confirmed_email", "username", "name"]
+): Promise<XUserData> {
+  const X_API_ENDPOINT = `https://api.x.com/2/users/me?user.fields=${fields.join(",")}`;
 
   try {
     const response = await fetch(X_API_ENDPOINT, {
@@ -145,5 +157,61 @@ export async function fetchUserData(accessToken: string): Promise<XUserData> {
       `Failed to fetch X user data: ${error.message || "Unknown error"}`,
       "NETWORK"
     );
+  }
+}
+
+export async function exchangeXCodeForToken(
+  code: string,
+  pkceVerifier: string,
+  clientId: string,
+  clientSecret: string | undefined,
+  redirectUri: string
+): Promise<XTokenResponse> {
+  const tokenUrl = "https://api.x.com/2/oauth2/token";
+  const tokenParams = new URLSearchParams();
+  tokenParams.append("code", code);
+  tokenParams.append("grant_type", "authorization_code");
+  tokenParams.append("client_id", clientId);
+  tokenParams.append("redirect_uri", redirectUri);
+  tokenParams.append("code_verifier", pkceVerifier);
+
+  const tokenHeaders: HeadersInit = {
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+
+  if (clientSecret) {
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    tokenHeaders["Authorization"] = `Basic ${basicAuth}`;
+    console.log("X Helper: Using Basic Auth for token exchange (Confidential Client).");
+  } else {
+    console.log("X Helper: Not using Basic Auth for token exchange (Public Client).");
+  }
+
+  try {
+    const tokenResponse = await fetch(tokenUrl, {
+      method: "POST",
+      headers: tokenHeaders,
+      body: tokenParams.toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorBody = await tokenResponse.text();
+      console.error(`X Token Exchange Error (${tokenResponse.status}): ${errorBody}`);
+
+      throw new Error(
+        `Failed to exchange X code for token. Status: ${
+          tokenResponse.status
+        }. Body: ${errorBody.substring(0, 200)}`
+      );
+    }
+
+    const tokenData = await tokenResponse.json();
+    if (!tokenData.access_token) {
+      throw new Error("Access token missing in X API response.");
+    }
+    return tokenData;
+  } catch (error: any) {
+    console.error("X API: Error during token exchange request:", error);
+    throw new Error(`X token exchange failed: ${error.message}`);
   }
 }
